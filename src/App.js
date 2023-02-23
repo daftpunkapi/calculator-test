@@ -1,9 +1,22 @@
-import React, { useState } from "react";
-
+import React, { useState, useContext, useEffect, useContext } from "react";
+import "./App.css";
 import Wrapper from "./components/Wrapper";
 import Screen from "./components/Screen";
 import ButtonBox from "./components/ButtonBox";
 import Button from "./components/Button";
+import {
+  clientSocket,
+  roomCount,
+  liveCursors,
+  joinRoom,
+} from "@dpapi/react";
+
+const cursorUrlArray = [
+  "https://icons.iconarchive.com/icons/svengraph/daft-punk/256/Daft-Punk-Guyman-Off-icon.png",
+  "https://icons.iconarchive.com/icons/everaldo/starwars/128/Darth-Vader-icon.png",
+  "https://icons.iconarchive.com/icons/everaldo/starwars/128/clone-old-icon.png",
+  "https://icons.iconarchive.com/icons/svengraph/daft-punk/256/Daft-Punk-Thomas-On-icon.png",
+];
 
 const btnValues = [
   ["C", "+-", "%", "/"],
@@ -22,6 +35,18 @@ const math = (a, b, sign) =>
   sign === "+" ? a + b : sign === "-" ? a - b : sign === "X" ? a * b : a / b;
 
 const App = () => {
+  const socket = useContext(clientSocket);
+  joinRoom("Room1", socket);
+  const usersCount = roomCount("Room1", socket);
+  const cursors = liveCursors("Room1", socket);
+  const [cursorUrl, setCursorUrl] = useState("");
+   
+  useEffect(() => {
+  setCursorUrl(
+    cursorUrlArray[Math.floor(Math.random() * cursorUrlArray.length)]
+  );
+  },[]);
+
   let [calc, setCalc] = useState({
     sign: "",
     num: 0,
@@ -122,35 +147,56 @@ const App = () => {
   };
 
   return (
-    <Wrapper>
-      <Screen value={calc.num ? calc.num : calc.res} />
-      <ButtonBox>
-        {btnValues.flat().map((btn, i) => {
+    <div className="App">
+      <h1>Number of users in the room: {usersCount}</h1>
+      {cursors.map((cursor, index) => {
+        if (cursor.socketId !== socket.id) {
           return (
-            <Button
-              key={i}
-              className={btn === "=" ? "equals" : ""}
-              value={btn}
-              onClick={
-                btn === "C"
-                  ? resetClickHandler
-                  : btn === "+-"
-                  ? invertClickHandler
-                  : btn === "%"
-                  ? percentClickHandler
-                  : btn === "="
-                  ? equalsClickHandler
-                  : btn === "/" || btn === "X" || btn === "-" || btn === "+"
-                  ? signClickHandler
-                  : btn === "."
-                  ? comaClickHandler
-                  : numClickHandler
-              }
+            <div
+              key={cursor.socketId || index}
+              className="other-cursor"
+              style={{
+                left: cursor.x,
+                top: cursor.y,
+                backgroundImage: `url(${cursorUrl})`,
+              }}
             />
           );
-        })}
-      </ButtonBox>
-    </Wrapper>
+        } else {
+          return null;
+        }
+      })}
+      <br />
+      <Wrapper>
+        <Screen value={calc.num ? calc.num : calc.res} />
+        <ButtonBox>
+          {btnValues.flat().map((btn, i) => {
+            return (
+              <Button
+                key={i}
+                className={btn === "=" ? "equals" : ""}
+                value={btn}
+                onClick={
+                  btn === "C"
+                    ? resetClickHandler
+                    : btn === "+-"
+                    ? invertClickHandler
+                    : btn === "%"
+                    ? percentClickHandler
+                    : btn === "="
+                    ? equalsClickHandler
+                    : btn === "/" || btn === "X" || btn === "-" || btn === "+"
+                    ? signClickHandler
+                    : btn === "."
+                    ? comaClickHandler
+                    : numClickHandler
+                }
+              />
+            );
+          })}
+        </ButtonBox>
+      </Wrapper>
+    </div>
   );
 };
 
